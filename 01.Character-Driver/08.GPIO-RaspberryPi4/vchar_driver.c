@@ -101,16 +101,16 @@ static long int driver_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	int32_t answer = 42;
 	switch(cmd){
 		case WR_VALUE:
-			if(copy_from_user(&answer, (int32_t *) arg, sizeof(answer))) 
-				printk("vchar_driver ioctl - Error copying data from user!\n");
-			else
-				printk("vchar_driver ioctl - Update the answer to %d\n", answer);
+			// if(copy_from_user(&answer, (int32_t *) arg, sizeof(answer))) 
+			// 	printk("vchar_driver ioctl - Error copying data from user!\n");
+			// else
+			// 	printk("vchar_driver ioctl - Update the answer to %d\n", answer);
 			break;
 		case RD_VALUE:
-			if(copy_to_user((int32_t *) arg, &answer, sizeof(answer))) 
-				printk("vchar_driver ioctl - Error copying data to user!\n");
-			else
-				printk("vchar_driver ioctl - The answer was copied!\n");
+			// if(copy_to_user((int32_t *) arg, &answer, sizeof(answer))) 
+			// 	printk("vchar_driver ioctl - Error copying data to user!\n");
+			// else
+			// 	printk("vchar_driver ioctl - The answer was copied!\n");
 			break;
 		default:
 			break;
@@ -123,7 +123,7 @@ static long int driver_ioctl(struct file *file, unsigned cmd, unsigned long arg)
  */
 static int driver_open(struct inode *device_file, struct file *instance) {
 	vchar_drv.open_cnt++;
-	printk("Handle open event (%d)\n", vchar_drv.open_cnt);
+	// printk("Handle open event (%d)\n", vchar_drv.open_cnt);
 	return 0;
 }
 
@@ -131,7 +131,7 @@ static int driver_open(struct inode *device_file, struct file *instance) {
  * @brief This function is called, when the device file is opened
  */
 static int driver_close(struct inode *device_file, struct file *instance) {
-	printk("Handle close event\n");
+	// printk("Handle close event\n");
 	return 0;
 }
 
@@ -152,32 +152,32 @@ static int __init symple_module_init(void) {
 
 	ret = alloc_chrdev_region(&vchar_drv.dev_num, 0, 1, DRIVER_NAME);
 	if(ret < 0) {
-		printk("Failed to register device number dynamically.\n");
+		printk(KERN_ERR "Failed to register device number dynamically.\n");
 		goto failed_register_devnum;
 	}
-	printk("Allocated device number with major=%d and minor=%d.\n", MAJOR(vchar_drv.dev_num), MINOR(vchar_drv.dev_num));
+	printk(KERN_INFO "Allocated device number with major=%d and minor=%d.\n", MAJOR(vchar_drv.dev_num), MINOR(vchar_drv.dev_num));
 
 	vchar_drv.dev_class = class_create(THIS_MODULE, DRIVER_CLASS);
 	if(vchar_drv.dev_class == NULL) {
-		printk("Failed to create class.\n");
+		printk(KERN_ERR "Failed to create class.\n");
 		goto failed_create_class;
 	}
 
 	vchar_drv.dev = device_create(vchar_drv.dev_class, NULL, vchar_drv.dev_num, NULL, DRIVER_NAME);
 	if(IS_ERR(vchar_drv.dev)) {
-		printk("Failed to create a device.\n");
+		printk(KERN_ERR "Failed to create a device.\n");
 		goto failed_create_device;
 	}
 
 	vchar_drv.vcdev = cdev_alloc();
 	if(vchar_drv.vcdev == NULL) {
-		printk("Failed to allocate cdev structure.\n");
+		printk(KERN_ERR "Failed to allocate cdev structure.\n");
 		goto failed_allocate_cdev;
 	}
 	cdev_init(vchar_drv.vcdev, &fops);
 	ret = cdev_add(vchar_drv.vcdev, vchar_drv.dev_num, 1);
 	if(ret < 0) {
-		printk("Failed to add character device to the system.\n");
+		printk(KERN_ERR "Failed to add character device to the system.\n");
 		goto failed_allocate_cdev;
 	}
 
@@ -203,7 +203,7 @@ static int __init symple_module_init(void) {
 	// Set GPIO 23 to OUTPUT
 	iowrite32((fsel2Read & ~FSEL_23_MASK) | (GPIO_23_FUNC & FSEL_23_MASK), GPFSEL2_ADDR);
 
-	printk("Initialize vchar driver successfully.\n");
+	printk(KERN_INFO "Initialize vchar driver successfully.\n");
 	return 0;
 
 failed_allocate_cdev:
@@ -231,7 +231,7 @@ static void __exit simple_module_exit(void) {
 	device_destroy(vchar_drv.dev_class, vchar_drv.dev_num);
 	class_destroy(vchar_drv.dev_class);
 	unregister_chrdev_region(vchar_drv.dev_num, 1);
-	printk("Exit vchar driver\n");
+	printk(KERN_INFO "Exit vchar driver\n");
 }
 
 module_init(symple_module_init);
