@@ -18,7 +18,6 @@ static int __init device_number_init(void) {
     int ret = 0;
 
     // Cap phat device number cho driver
-    vchar_drv.dev_num = MKDEV(123, 0);
     ret = alloc_chrdev_region(&vchar_drv.dev_num, 0, 1, "vchar_device");
     if(ret < 0){
         printk("failed to register device number with code=%d\n", ret);
