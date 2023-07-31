@@ -148,7 +148,7 @@ static int __init symple_module_init(void) {
 		printk(KERN_ERR "Can not request interrupt nr.: %d\n", irq_number);
 		goto failed_setup_irq_pin;
 	}
-	printk("GPIO %d is mapped to IRQ Nr.: %d\n", IRQ_PIN, irq_number);
+	printk(KERN_INFO "GPIO %d is mapped to IRQ Nr.: %d\n", IRQ_PIN, irq_number);
 
 	return 0;
 
