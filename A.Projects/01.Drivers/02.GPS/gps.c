@@ -20,13 +20,13 @@ static int buffer_pointer = 0;
 
 static unsigned int irq_number;
 
-struct _vchar_drv {
+struct _gps_drv {
 	dev_t dev_num;
 	struct class *dev_class;
 	struct device *dev;
 	struct cdev *vcdev;
 	unsigned int open_cnt;
-} vchar_drv;
+} gps_drv;
 
 /**
  * @brief Read data out of the buffer
@@ -73,7 +73,7 @@ static long int driver_ioctl(struct file *file, unsigned cmd, unsigned long arg)
  * @brief This function is called, when the device file is closed
  */
 static int driver_open(struct inode *device_file, struct file *instance) {
-	vchar_drv.open_cnt++;
+	gps_drv.open_cnt++;
 	return 0;
 }
 
@@ -107,36 +107,38 @@ static irq_handler_t gpio_irq_handler(unsigned int irq, void *dev_id, struct pt_
 static int __init symple_module_init(void) {
 	int ret = -1;
 
-	ret = alloc_chrdev_region(&vchar_drv.dev_num, 0, 1, DRIVER_NAME);
+	ret = alloc_chrdev_region(&gps_drv.dev_num, 0, 1, DRIVER_NAME);
 	if(ret < 0) {
 		printk(KERN_ERR "Failed to register device number dynamically.\n");
 		goto failed_register_devnum;
 	}
-	printk(KERN_INFO "Allocated device number with major=%d and minor=%d.\n", MAJOR(vchar_drv.dev_num), MINOR(vchar_drv.dev_num));
+	printk(KERN_INFO "Allocated device number with major=%d and minor=%d.\n", MAJOR(gps_drv.dev_num), MINOR(gps_drv.dev_num));
 
-	vchar_drv.dev_class = class_create(THIS_MODULE, DRIVER_CLASS);
-	if(vchar_drv.dev_class == NULL) {
+	gps_drv.dev_class = class_create(THIS_MODULE, DRIVER_CLASS);
+	if(gps_drv.dev_class == NULL) {
 		printk(KERN_ERR "Failed to create class.\n");
 		goto failed_create_class;
 	}
 
-	vchar_drv.dev = device_create(vchar_drv.dev_class, NULL, vchar_drv.dev_num, NULL, DRIVER_NAME);
-	if(IS_ERR(vchar_drv.dev)) {
+	gps_drv.dev = device_create(gps_drv.dev_class, NULL, gps_drv.dev_num, NULL, DRIVER_NAME);
+	if(IS_ERR(gps_drv.dev)) {
 		printk(KERN_ERR "Failed to create a device.\n");
 		goto failed_create_device;
 	}
 
-	vchar_drv.vcdev = cdev_alloc();
-	if(vchar_drv.vcdev == NULL) {
+	gps_drv.vcdev = cdev_alloc();
+	if(gps_drv.vcdev == NULL) {
 		printk(KERN_ERR "Failed to allocate cdev structure.\n");
 		goto failed_allocate_cdev;
 	}
-	cdev_init(vchar_drv.vcdev, &fops);
-	ret = cdev_add(vchar_drv.vcdev, vchar_drv.dev_num, 1);
+	cdev_init(gps_drv.vcdev, &fops);
+	ret = cdev_add(gps_drv.vcdev, gps_drv.dev_num, 1);
 	if(ret < 0) {
 		printk(KERN_ERR "Failed to add character device to the system.\n");
 		goto failed_allocate_cdev;
 	}
+	
+	printk(KERN_INFO "Initialize %s successfully.\n", driver_name);
 
 	/* Setup the gpio */
 	if(gpio_request(IRQ_PIN, IRQ_PIN_NAME)) {
@@ -151,8 +153,6 @@ static int __init symple_module_init(void) {
 		return -1;
 	}
 
-	printk(KERN_INFO "Initialize %s successfully.\n", driver_name);
-
 	/* Setup the interrupt */
 	irq_number = gpio_to_irq(IRQ_PIN);
 	if(request_irq(irq_number, (irq_handler_t) gpio_irq_handler, IRQF_TRIGGER_RISING, "gps_gpio_irq", NULL) != 0){
@@ -161,13 +161,14 @@ static int __init symple_module_init(void) {
 		return -1;
 	}
 	printk("GPIO %d is mapped to IRQ Nr.: %d\n", IRQ_PIN, irq_number);
+	
 	return 0;
 
 failed_allocate_cdev:
 failed_create_device:
-	class_destroy(vchar_drv.dev_class);
+	class_destroy(gps_drv.dev_class);
 failed_create_class:
-	unregister_chrdev_region(vchar_drv.dev_num, 1);
+	unregister_chrdev_region(gps_drv.dev_num, 1);
 failed_register_devnum:
 	return ret;
 }
@@ -180,10 +181,10 @@ static void __exit simple_module_exit(void) {
 	free_irq(irq_number, NULL);
 	gpio_free(IRQ_PIN);
 
-	cdev_del(vchar_drv.vcdev);
-	device_destroy(vchar_drv.dev_class, vchar_drv.dev_num);
-	class_destroy(vchar_drv.dev_class);
-	unregister_chrdev_region(vchar_drv.dev_num, 1);
+	cdev_del(gps_drv.vcdev);
+	device_destroy(gps_drv.dev_class, gps_drv.dev_num);
+	class_destroy(gps_drv.dev_class);
+	unregister_chrdev_region(gps_drv.dev_num, 1);
 	printk(KERN_INFO "Exit %s\n", driver_name);
 }
 
