@@ -34,13 +34,8 @@ struct _gps_drv {
 static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, loff_t *offs) {
 	int to_copy, not_copied, delta;
 
-	/* Get amount of data to copy */
 	to_copy = min(count, buffer_pointer);
-
-	/* Copy data to user */
 	not_copied = copy_to_user(user_buffer, buffer, to_copy);
-
-	/* Calculate data */
 	delta = to_copy - not_copied;
 
 	return delta;
@@ -52,14 +47,9 @@ static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, l
 static ssize_t driver_write(struct file *File, const char *user_buffer, size_t count, loff_t *offs) {
 	int to_copy, not_copied, delta;
 
-	/* Get amount of data to copy */
 	to_copy = min(count, sizeof(buffer));
-
-	/* Copy data to user */
 	not_copied = copy_from_user(buffer, user_buffer, to_copy);
 	buffer_pointer = to_copy;
-
-	/* Calculate data */
 	delta = to_copy - not_copied;
 
 	return delta;
@@ -161,7 +151,7 @@ static int __init symple_module_init(void) {
 		return -1;
 	}
 	printk("GPIO %d is mapped to IRQ Nr.: %d\n", IRQ_PIN, irq_number);
-	
+
 	return 0;
 
 failed_allocate_cdev:
