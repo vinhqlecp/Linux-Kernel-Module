@@ -87,7 +87,7 @@ static struct file_operations fops = {
  * @brief Interrupt service routine is called, when interrupt is triggered
  */
 static irq_handler_t gpio_irq_handler(unsigned int irq, void *dev_id, struct pt_regs *regs) {
-
+	// printk(KERN_INFO "GPS Input Interrupt!\n");
 	return (irq_handler_t) IRQ_HANDLED; 
 }
 
@@ -133,27 +133,27 @@ static int __init symple_module_init(void) {
 	/* Setup the gpio */
 	if(gpio_request(IRQ_PIN, IRQ_PIN_NAME)) {
 		printk(KERN_ERR "Can not allocate GPIO %d\n", IRQ_PIN);
-		return -1;
+		goto failed_allocate_cdev;
 	}
 
 	/* Set GPIO direction */
 	if(gpio_direction_input(IRQ_PIN)) {
 		printk(KERN_ERR "Can not set GPIO %d to input!\n", IRQ_PIN);
-		gpio_free(IRQ_PIN);
-		return -1;
+		goto failed_setup_irq_pin;
 	}
 
 	/* Setup the interrupt */
 	irq_number = gpio_to_irq(IRQ_PIN);
 	if(request_irq(irq_number, (irq_handler_t) gpio_irq_handler, IRQF_TRIGGER_RISING, "gps_gpio_irq", NULL) != 0){
 		printk(KERN_ERR "Can not request interrupt nr.: %d\n", irq_number);
-		gpio_free(IRQ_PIN);
-		return -1;
+		goto failed_setup_irq_pin;
 	}
 	printk("GPIO %d is mapped to IRQ Nr.: %d\n", IRQ_PIN, irq_number);
 
 	return 0;
 
+failed_setup_irq_pin:
+	gpio_free(IRQ_PIN);
 failed_allocate_cdev:
 failed_create_device:
 	class_destroy(gps_drv.dev_class);
